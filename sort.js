@@ -1,5 +1,12 @@
-// Dữ liệu sản phẩm mẫu
-let products = [
+// ============================================
+// CONSTANTS & DATA
+// ============================================
+
+/**
+ * Dữ liệu sản phẩm gốc (immutable)
+ * @constant {Array<Object>}
+ */
+const ORIGINAL_PRODUCTS = Object.freeze([
     {
         id: 1,
         name: "Laptop Dell XPS 13",
@@ -56,100 +63,131 @@ let products = [
         category: "Đồng hồ",
         image: "https://images.unsplash.com/photo-1434493789847-2f02dc6ca35d?w=400&h=300&fit=crop"
     }
-];
-
-// Lưu mảng gốc để có thể reset
-let originalProducts = [...products];
+]);
 
 /**
- * Hàm sắp xếp mảng sản phẩm theo giá
- * @param {Array} arr - Mảng sản phẩm cần sắp xếp
- * @param {string} order - Thứ tự sắp xếp: 'asc' (tăng dần) hoặc 'desc' (giảm dần)
- * @returns {Array} - Mảng đã được sắp xếp
+ * Enum cho các loại sắp xếp
+ * @constant {Object}
  */
-function sortByPrice(arr, order = 'asc') {
-    return [...arr].sort((a, b) => {
-        if (order === 'asc') {
-            return a.price - b.price; // Giá thấp đến cao
-        } else {
-            return b.price - a.price; // Giá cao đến thấp
-        }
-    });
-}
+const SORT_TYPES = {
+    DEFAULT: 'default',
+    PRICE_ASC: 'price-asc',
+    PRICE_DESC: 'price-desc'
+};
+
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
+
+/**
+ * Sắp xếp mảng sản phẩm theo giá (tối ưu với ternary operator)
+ * @param {Array<Object>} arr - Mảng sản phẩm cần sắp xếp
+ * @param {string} order - Thứ tự sắp xếp: 'asc' | 'desc'
+ * @returns {Array<Object>} Mảng đã được sắp xếp
+ */
+const sortByPrice = (arr, order = 'asc') =>
+    [...arr].sort((a, b) => order === 'asc' ? a.price - b.price : b.price - a.price);
 
 /**
  * Định dạng số tiền theo chuẩn Việt Nam
  * @param {number} price - Giá tiền
- * @returns {string} - Chuỗi đã định dạng
+ * @returns {string} Chuỗi đã định dạng
  */
-function formatPrice(price) {
-    return price.toLocaleString('vi-VN') + ' ₫';
-}
+const formatPrice = (price) => `${price.toLocaleString('vi-VN')} ₫`;
 
 /**
- * Render danh sách sản phẩm ra HTML
- * @param {Array} productsToRender - Mảng sản phẩm cần hiển thị
+ * Tạo HTML cho một product card
+ * @param {Object} product - Thông tin sản phẩm
+ * @returns {string} HTML string
  */
-function renderProducts(productsToRender) {
+const createProductCardHTML = ({ image, name, price, category }) => `
+    <img src="${image}" alt="${name}" class="product-image" loading="lazy">
+    <h3 class="product-name">${name}</h3>
+    <p class="product-price">${formatPrice(price)}</p>
+    <span class="product-category">${category}</span>
+`;
+
+// ============================================
+// DOM MANIPULATION
+// ============================================
+
+/**
+ * Render danh sách sản phẩm (tối ưu với DocumentFragment)
+ * @param {Array<Object>} productsToRender - Mảng sản phẩm cần hiển thị
+ */
+const renderProducts = (productsToRender) => {
     const container = document.getElementById('productsContainer');
 
-    // Xóa nội dung cũ
-    container.innerHTML = '';
+    if (!container) {
+        console.error('Container element not found');
+        return;
+    }
 
-    // Tạo HTML cho từng sản phẩm
+    // Sử dụng DocumentFragment để giảm reflow/repaint
+    const fragment = document.createDocumentFragment();
+
     productsToRender.forEach(product => {
         const productCard = document.createElement('div');
         productCard.className = 'product-card';
-
-        productCard.innerHTML = `
-            <img src="${product.image}" alt="${product.name}" class="product-image">
-            <h3 class="product-name">${product.name}</h3>
-            <p class="product-price">${formatPrice(product.price)}</p>
-            <span class="product-category">${product.category}</span>
-        `;
-
-        container.appendChild(productCard);
+        productCard.innerHTML = createProductCardHTML(product);
+        fragment.appendChild(productCard);
     });
-}
+
+    // Clear và append một lần duy nhất
+    container.innerHTML = '';
+    container.appendChild(fragment);
+};
+
+/**
+ * Lấy danh sách sản phẩm đã sắp xếp theo loại
+ * @param {string} sortType - Loại sắp xếp
+ * @returns {Array<Object>} Mảng sản phẩm đã sắp xếp
+ */
+const getSortedProducts = (sortType) => {
+    switch (sortType) {
+        case SORT_TYPES.PRICE_ASC:
+            return sortByPrice(ORIGINAL_PRODUCTS, 'asc');
+        case SORT_TYPES.PRICE_DESC:
+            return sortByPrice(ORIGINAL_PRODUCTS, 'desc');
+        case SORT_TYPES.DEFAULT:
+        default:
+            return [...ORIGINAL_PRODUCTS];
+    }
+};
+
+// ============================================
+// EVENT HANDLERS
+// ============================================
 
 /**
  * Xử lý sự kiện thay đổi dropdown sắp xếp
+ * @param {Event} event - Change event
  */
-function handleSortChange(event) {
-    const sortValue = event.target.value;
-    let sortedProducts;
-
-    switch (sortValue) {
-        case 'price-asc':
-            sortedProducts = sortByPrice(products, 'asc');
-            break;
-        case 'price-desc':
-            sortedProducts = sortByPrice(products, 'desc');
-            break;
-        case 'default':
-        default:
-            sortedProducts = [...originalProducts];
-            break;
-    }
-
-    // Cập nhật mảng products hiện tại
-    products = sortedProducts;
-
-    // Render lại giao diện
+const handleSortChange = ({ target: { value } }) => {
+    const sortedProducts = getSortedProducts(value);
     renderProducts(sortedProducts);
-}
+};
+
+// ============================================
+// INITIALIZATION
+// ============================================
 
 /**
  * Khởi tạo ứng dụng
  */
-function init() {
+const init = () => {
     // Render sản phẩm ban đầu
-    renderProducts(products);
+    renderProducts(ORIGINAL_PRODUCTS);
 
-    // Gắn sự kiện cho dropdown
+    // Gắn sự kiện cho dropdown với error handling
     const sortSelect = document.getElementById('sortSelect');
-    sortSelect.addEventListener('change', handleSortChange);
-}
+
+    if (sortSelect) {
+        sortSelect.addEventListener('change', handleSortChange);
+    } else {
+        console.error('Sort select element not found');
+    }
+};
 
 // Chạy khi DOM đã load xong
 document.addEventListener('DOMContentLoaded', init);
