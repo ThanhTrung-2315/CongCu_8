@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sắp Xếp Sản Phẩm</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Danh Sách Sản Phẩm</h1>
+            <div class="sort-controls">
+                <label for="sortSelect">Sắp xếp theo giá:</label>
+                <select id="sortSelect" class="sort-dropdown">
+                    <option value="default">Mặc định</option>
+                    <option value="price-asc">Giá: Thấp đến Cao</option>
+                    <option value="price-desc">Giá: Cao đến Thấp</option>
+                </select>
+            </div>
+        </header>
+
+        <div class="products-grid" id="productsContainer">
+            <!-- Products will be rendered here by JavaScript -->
+        </div>
+    </div>
+
+    <script src="sort.js"></script>
+</body>
+</html>
