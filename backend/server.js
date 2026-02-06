@@ -18,15 +18,43 @@ let users = [
 
 let nextUserId = 3;
 
+// Validation Helpers
+const isValidEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+const isValidUsername = (username) => {
+  // Username: 3-20 chars, alphanumeric and underscore only
+  const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+  return usernameRegex.test(username);
+};
+
+const isValidPassword = (password) => {
+  // Password: at least 6 chars
+  return password && password.length >= 6;
+};
+
 // Login Endpoint
 app.post('/api/login', (req, res) => {
-  const { username, password } = req.body;
+  let { username, password } = req.body;
+
+  // Trim whitespace
+  username = (username || '').trim();
+  password = (password || '').trim();
 
   // Validation
   if (!username || !password) {
     return res.status(400).json({ 
       success: false, 
       message: 'Username and password are required' 
+    });
+  }
+
+  if (username.length < 3) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Username must be at least 3 characters' 
     });
   }
 
@@ -54,7 +82,13 @@ app.post('/api/login', (req, res) => {
 
 // Register Endpoint
 app.post('/api/register', (req, res) => {
-  const { username, email, password, confirmPassword } = req.body;
+  let { username, email, password, confirmPassword } = req.body;
+
+  // Trim whitespace
+  username = (username || '').trim();
+  email = (email || '').trim();
+  password = (password || '').trim();
+  confirmPassword = (confirmPassword || '').trim();
 
   // Validation
   if (!username || !email || !password || !confirmPassword) {
@@ -64,17 +98,34 @@ app.post('/api/register', (req, res) => {
     });
   }
 
+  // Username validation
+  if (!isValidUsername(username)) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Username must be 3-20 characters (letters, numbers, underscore only)' 
+    });
+  }
+
+  // Email validation
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Please enter a valid email address' 
+    });
+  }
+
+  // Password validation
+  if (!isValidPassword(password)) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Password must be at least 6 characters' 
+    });
+  }
+
   if (password !== confirmPassword) {
     return res.status(400).json({ 
       success: false, 
       message: 'Passwords do not match' 
-    });
-  }
-
-  if (password.length < 6) {
-    return res.status(400).json({ 
-      success: false, 
-      message: 'Password must be at least 6 characters' 
     });
   }
 

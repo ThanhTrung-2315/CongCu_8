@@ -10,6 +10,23 @@ const registerFormElement = document.getElementById('registerFormElement');
 const loginMessage = document.getElementById('loginMessage');
 const registerMessage = document.getElementById('registerMessage');
 
+// Validation Helpers
+const validateEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+const validateUsername = (username) => {
+  // Username: 3-20 chars, alphanumeric and underscore only
+  const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+  return usernameRegex.test(username);
+};
+
+const validatePassword = (password) => {
+  // Password: at least 6 chars
+  return password && password.length >= 6;
+};
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
   loginFormElement.addEventListener('submit', handleLogin);
@@ -42,8 +59,24 @@ function toggleForm(event) {
 async function handleLogin(e) {
   e.preventDefault();
   
-  const username = document.getElementById('login-username').value;
-  const password = document.getElementById('login-password').value;
+  let username = document.getElementById('login-username').value.trim();
+  let password = document.getElementById('login-password').value.trim();
+  
+  // Client-side validation
+  if (!username || !password) {
+    showMessage(loginMessage, 'Username and password are required', 'error');
+    return;
+  }
+
+  if (username.length < 3) {
+    showMessage(loginMessage, 'Username must be at least 3 characters', 'error');
+    return;
+  }
+
+  if (password.length < 6) {
+    showMessage(loginMessage, 'Password must be at least 6 characters', 'error');
+    return;
+  }
   
   try {
     const response = await fetch(`${API_URL}/login`, {
@@ -77,10 +110,36 @@ async function handleLogin(e) {
 async function handleRegister(e) {
   e.preventDefault();
   
-  const username = document.getElementById('register-username').value;
-  const email = document.getElementById('register-email').value;
-  const password = document.getElementById('register-password').value;
-  const confirmPassword = document.getElementById('register-confirm').value;
+  let username = document.getElementById('register-username').value.trim();
+  let email = document.getElementById('register-email').value.trim();
+  let password = document.getElementById('register-password').value.trim();
+  let confirmPassword = document.getElementById('register-confirm').value.trim();
+  
+  // Client-side validation
+  if (!username || !email || !password || !confirmPassword) {
+    showMessage(registerMessage, 'All fields are required', 'error');
+    return;
+  }
+
+  if (!validateUsername(username)) {
+    showMessage(registerMessage, 'Username must be 3-20 characters (letters, numbers, underscore only)', 'error');
+    return;
+  }
+
+  if (!validateEmail(email)) {
+    showMessage(registerMessage, 'Please enter a valid email address', 'error');
+    return;
+  }
+
+  if (!validatePassword(password)) {
+    showMessage(registerMessage, 'Password must be at least 6 characters', 'error');
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    showMessage(registerMessage, 'Passwords do not match', 'error');
+    return;
+  }
   
   try {
     const response = await fetch(`${API_URL}/register`, {
